@@ -28,4 +28,4 @@ public class Riesgo {
     @ManyToOne
     @JoinColumn(name = "poliza_id")
     private Poliza poliza;
-}
+} 

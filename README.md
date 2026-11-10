@@ -2,10 +2,20 @@
 
 API REST desarrollada con Spring Boot para gestionar pólizas de seguro y sus riesgos, con reglas de negocio, seguridad por API key e integración simulada con un CORE transaccional.
 
+## Demo en vivo
+
+**Swagger UI:** https://polizas-api-g8ew.onrender.com/swagger-ui.html
+
+1. Haz clic en **Authorize** y escribe la API key `123456`.
+2. Abre cualquier endpoint, pulsa **Try it out** y luego **Execute**.
+
+> Está en el plan gratuito de Render: si lleva un rato sin uso, la primera carga tarda unos 30 a 50 segundos mientras el servicio despierta.
+
 ## Tecnologías
 
 - Java 17+
-- Spring Boot 3.5 (Web, Data JPA, Validation)
+- Spring Boot 3.5 (Web, Data JPA, Validation, Actuator)
+- springdoc-openapi (Swagger UI)
 - H2 Database (en memoria, con datos de ejemplo)
 - Lombok
 - JUnit 5, Mockito y MockMvc
@@ -18,7 +28,7 @@ cd polizasapi
 ./mvnw spring-boot:run
 ```
 
-La API queda en `http://localhost:8080`. En Windows se usa `mvnw.cmd spring-boot:run`.
+La API queda en `http://localhost:8080` y la documentación interactiva en `http://localhost:8080/swagger-ui.html` (la raíz `/` redirige ahí). En Windows se usa `mvnw.cmd spring-boot:run`.
 
 Para correr las pruebas:
 
@@ -56,7 +66,7 @@ El health check es `GET /actuator/health` y no requiere API key. En el plan grat
 
 ## Seguridad
 
-Todos los endpoints exigen el header (excepto `GET /actuator/health`):
+Todos los endpoints exigen el header, excepto el health check (`/actuator/health`) y la documentación (`/swagger-ui.html`, `/v3/api-docs`):
 
 ```http
 x-api-key: 123456
@@ -166,8 +176,8 @@ curl -X POST -H "x-api-key: 123456" -H "Content-Type: application/json" -d '{"de
 
 ```
 polizasapi/src/main/java/com/seguros/polizasapi
-├── config/       Filtro de API key
-├── controller/   Pólizas, riesgos y CORE mock
+├── config/       Filtro de API key y configuración de OpenAPI
+├── controller/   Pólizas, riesgos, CORE mock y redirección a Swagger
 ├── core/         Eventos y cliente HTTP hacia el CORE
 ├── dto/          Contratos de entrada y salida
 ├── entity/       Entidades JPA
@@ -179,7 +189,7 @@ polizasapi/src/main/java/com/seguros/polizasapi
 
 ## Pruebas
 
-28 pruebas automatizadas:
+31 pruebas automatizadas:
 
 - **Unitarias** (`PolizaServiceTest`, `RiesgoServiceTest`): reglas de negocio, cálculo del IPC y publicación de eventos.
-- **Integración** (`PolizasApiIntegrationTest`): endpoints de punta a punta con MockMvc, seguridad, health check, validaciones y códigos de error.
+- **Integración** (`PolizasApiIntegrationTest`): endpoints de punta a punta con MockMvc, seguridad, health check, documentación OpenAPI, validaciones y códigos de error.

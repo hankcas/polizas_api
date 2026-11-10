@@ -18,8 +18,8 @@ import java.security.MessageDigest;
 
 /**
  * Exige el header {@code x-api-key} en todos los endpoints de la API.
- * Quedan excluidos la consola de H2 (herramienta de desarrollo) y el health check
- * que usa la plataforma de despliegue para saber si la app está viva.
+ * Quedan excluidos la consola de H2 (herramienta de desarrollo), el health check
+ * que usa la plataforma de despliegue y la documentación pública (Swagger UI y OpenAPI).
  */
 @Component
 public class ApiKeyFilter extends OncePerRequestFilter {
@@ -37,7 +37,12 @@ public class ApiKeyFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String ruta = request.getRequestURI().substring(request.getContextPath().length());
-        return ruta.startsWith("/h2-console") || ruta.equals("/actuator/health");
+        return ruta.equals("/")
+                || ruta.equals("/actuator/health")
+                || ruta.startsWith("/h2-console")
+                || ruta.equals("/swagger-ui.html")
+                || ruta.startsWith("/swagger-ui/")
+                || ruta.startsWith("/v3/api-docs");
     }
 
     @Override

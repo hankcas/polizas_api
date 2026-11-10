@@ -7,6 +7,6 @@ import java.util.List;
 
 public interface RiesgoRepository extends JpaRepository<Riesgo, Long> {
 
-    List<Riesgo> findByPolizaId(Long polizaId);
+    List<Riesgo> findByPolizaIdOrderByIdAsc(Long polizaId);
 
 }

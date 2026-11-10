@@ -18,7 +18,8 @@ import java.security.MessageDigest;
 
 /**
  * Exige el header {@code x-api-key} en todos los endpoints de la API.
- * Solo la consola de H2 (herramienta de desarrollo) queda excluida.
+ * Quedan excluidos la consola de H2 (herramienta de desarrollo) y el health check
+ * que usa la plataforma de despliegue para saber si la app está viva.
  */
 @Component
 public class ApiKeyFilter extends OncePerRequestFilter {
@@ -35,7 +36,8 @@ public class ApiKeyFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return request.getRequestURI().startsWith(request.getContextPath() + "/h2-console");
+        String ruta = request.getRequestURI().substring(request.getContextPath().length());
+        return ruta.startsWith("/h2-console") || ruta.equals("/actuator/health");
     }
 
     @Override

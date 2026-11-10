@@ -1,0 +1,15 @@
+# Blueprint de Render: https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: polizas-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./polizasapi/Dockerfile
+    dockerContext: ./polizasapi
+    healthCheckPath: /actuator/health
+    autoDeploy: true
+    envVars:
+      - key: H2_CONSOLE_ENABLED
+        value: "false"
+      - key: API_KEY
+        value: "123456"

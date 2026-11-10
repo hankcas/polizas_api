@@ -193,3 +193,10 @@ polizasapi/src/main/java/com/seguros/polizasapi
 
 - **Unitarias** (`PolizaServiceTest`, `RiesgoServiceTest`): reglas de negocio, cálculo del IPC y publicación de eventos.
 - **Integración** (`PolizasApiIntegrationTest`): endpoints de punta a punta con MockMvc, seguridad, health check, documentación OpenAPI, validaciones y códigos de error.
+
+## Autor
+
+**Leonardo Castro** — Ingeniero Mecatrónico y desarrollador Full Stack
+[GitHub](https://github.com/hankcas)
+
+Desarrollado con apoyo de Claude (Anthropic) como asistente de programación.

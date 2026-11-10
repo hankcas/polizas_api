@@ -26,15 +26,43 @@ Para correr las pruebas:
 ./mvnw test
 ```
 
+Con Docker:
+
+```bash
+docker build -t polizas-api polizasapi
+```
+
+```bash
+docker run -p 8080:8080 polizas-api
+```
+
+## Despliegue en Render
+
+El repositorio incluye un [`render.yaml`](render.yaml) (Blueprint) y un [`Dockerfile`](polizasapi/Dockerfile) multi-etapa.
+
+1. En [Render](https://dashboard.render.com) elegir **New → Blueprint** y conectar este repositorio.
+2. Render detecta el `render.yaml` y crea el servicio web `polizas-api` en el plan gratuito.
+3. Cuando termine el build, la API queda en `https://polizas-api.onrender.com` (o la URL que asigne Render).
+
+Variables de entorno:
+
+| Variable | Valor por defecto | Uso |
+|---|---|---|
+| `PORT` | `8080` | Puerto HTTP (Render lo asigna solo) |
+| `API_KEY` | `123456` | Valor esperado en el header `x-api-key` |
+| `H2_CONSOLE_ENABLED` | `true` | En Render queda en `false` |
+
+El health check es `GET /actuator/health` y no requiere API key. En el plan gratuito el servicio se suspende tras unos 15 minutos sin tráfico: la primera petición después de eso tarda alrededor de 30 segundos. Como la base es H2 en memoria, cada reinicio vuelve a cargar los datos de ejemplo.
+
 ## Seguridad
 
-Todos los endpoints exigen el header:
+Todos los endpoints exigen el header (excepto `GET /actuator/health`):
 
 ```http
 x-api-key: 123456
 ```
 
-Si el header falta o no coincide, la API responde `401 Unauthorized`. La clave se configura en `application.properties` (`api.key`).
+Si el header falta o no coincide, la API responde `401 Unauthorized`. La clave se configura con la variable de entorno `API_KEY`.
 
 ## Endpoints
 
@@ -151,7 +179,7 @@ polizasapi/src/main/java/com/seguros/polizasapi
 
 ## Pruebas
 
-26 pruebas automatizadas:
+28 pruebas automatizadas:
 
 - **Unitarias** (`PolizaServiceTest`, `RiesgoServiceTest`): reglas de negocio, cálculo del IPC y publicación de eventos.
-- **Integración** (`PolizasApiIntegrationTest`): endpoints de punta a punta con MockMvc, seguridad, validaciones y códigos de error.
+- **Integración** (`PolizasApiIntegrationTest`): endpoints de punta a punta con MockMvc, seguridad, health check, validaciones y códigos de error.

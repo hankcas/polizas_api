@@ -43,6 +43,19 @@ class PolizasApiIntegrationTest {
     }
 
     @Test
+    void healthCheckNoRequiereApiKey() throws Exception {
+        mvc.perform(get("/actuator/health"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UP"));
+    }
+
+    @Test
+    void otrosEndpointsDeActuatorNoEstanExpuestos() throws Exception {
+        mvc.perform(get("/actuator/env").header(API_KEY, VALOR_API_KEY))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     void listarSinFiltrosDevuelveTodas() throws Exception {
         mvc.perform(get("/polizas").header(API_KEY, VALOR_API_KEY))
                 .andExpect(status().isOk())

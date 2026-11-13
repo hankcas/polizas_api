@@ -1,15 +1,22 @@
 """Adaptador de Google Gemini: traduce entre nuestro formato y el SDK google-genai."""
 
+import logging
+
 from google import genai
 from google.genai import errors, types
 
 from app.agent.llm import ErrorLLM, LlamadaHerramienta, Mensaje, RespuestaLLM
 from app.tools.herramientas import Herramienta
 
+log = logging.getLogger(__name__)
+
 
 class ProveedorGemini:
-    def __init__(self, api_key: str, modelo: str, cliente: genai.Client | None = None):
-        self._modelo = modelo
+    def __init__(
+        self, api_key: str, modelo: str, respaldo: str | None = None, cliente: genai.Client | None = None
+    ):
+        # Lista de modelos a intentar en orden: el principal y, si hay, el de respaldo.
+        self._modelos = [modelo, respaldo] if respaldo else [modelo]
         self._cliente = cliente or genai.Client(
             api_key=api_key,
             # El SDK reintenta solo si Gemini responde 429 (límite) o 5xx (saturado).
@@ -28,12 +35,20 @@ class ProveedorGemini:
             # la trazabilidad y, en la etapa 3, la confirmación.
             automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
         )
-        try:
-            respuesta = self._cliente.models.generate_content(
-                model=self._modelo, contents=_a_contenidos(historial), config=config
-            )
-        except errors.APIError as error:
-            raise ErrorLLM(_mensaje_de_error(error)) from error
+        contenidos = _a_contenidos(historial)
+        for modelo in self._modelos:
+            try:
+                respuesta = self._cliente.models.generate_content(model=modelo, contents=contenidos, config=config)
+                break  # funcionó: salimos del for
+            except errors.ServerError as error:  # 5xx: el modelo está saturado
+                ultimo_error = error
+                log.warning("El modelo %s está saturado (%s); probando el siguiente.", modelo, error.code)
+            except errors.APIError as error:  # otros errores (clave, cuota...): cambiar de modelo no ayuda
+                raise ErrorLLM(_mensaje_de_error(error)) from error
+        else:
+            # El `else` de un `for` corre solo si el for terminó sin `break`:
+            # es decir, todos los modelos fallaron.
+            raise ErrorLLM(_mensaje_de_error(ultimo_error)) from ultimo_error
 
         contenido = respuesta.candidates[0].content if respuesta.candidates else None
         if contenido is None or not contenido.parts:

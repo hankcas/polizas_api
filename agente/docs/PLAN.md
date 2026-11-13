@@ -68,7 +68,8 @@ Valores válidos (del Swagger): `tipo` = `INDIVIDUAL` o `COLECTIVA`; `estado` = 
 | Situación | Qué hace el agente |
 |---|---|
 | Render dormido (medido: hasta 145 s en despertar) | Hasta 5 intentos de 30 s con espera creciente (2, 4, 8, 16 s) y avisa "la API está despertando" |
-| Gemini saturado (`503`) o límite gratuito (`429`) | El SDK reintenta 3 veces; si sigue fallando, mensaje claro al usuario |
+| Gemini saturado (`503`) o límite gratuito (`429`) | El SDK reintenta 3 veces. Si sigue saturado, prueba una vez con el modelo de respaldo (`LLM_MODEL_RESPALDO`); si también falla, mensaje claro al usuario |
+| Timeout en un POST (renovar/cancelar) | **No reintenta**: el primer intento pudo haber llegado y se renovaría dos veces. Antes del POST despierta la API con `GET /actuator/health`, que sí se puede repetir sin riesgo |
 | Timeout después de todos los intentos | Le explica al usuario que la API no respondió, sin inventar datos |
 | `401` | Mensaje claro: la API key del `.env` es incorrecta. No reintenta |
 | `404` / `422` | Le pasa el mensaje de la API al LLM para que lo explique (ej. "no se puede renovar una póliza cancelada") |

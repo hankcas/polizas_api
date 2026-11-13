@@ -56,8 +56,34 @@ class ClienteApiPolizas:
         params = {clave: valor for clave, valor in filtros.items() if valor}
         return self._pedir("GET", "/polizas", params=params)
 
-    def _pedir(self, metodo: str, ruta: str, **kwargs: Any) -> Any:
-        for intento in range(1, self._intentos + 1):
+    # int(...) porque el LLM a veces manda los números como decimales (1.0)
+    # y la API espera /polizas/1, no /polizas/1.0.
+    def consultar_poliza(self, id: int) -> dict:
+        return self._pedir("GET", f"/polizas/{int(id)}")
+
+    def listar_riesgos(self, poliza_id: int) -> list[dict]:
+        return self._pedir("GET", f"/polizas/{int(poliza_id)}/riesgos")
+
+    def renovar_poliza(self, id: int) -> dict:
+        return self._modificar(f"/polizas/{int(id)}/renovar")
+
+    def cancelar_poliza(self, id: int) -> dict:
+        return self._modificar(f"/polizas/{int(id)}/cancelar")
+
+    def _modificar(self, ruta: str) -> dict:
+        """Envía un POST que cambia datos, una sola vez.
+
+        Reintentar un POST es peligroso: si el primer intento sí llegó pero la
+        respuesta tardó, reintentar renovaría la póliza dos veces. Por eso
+        primero despertamos la API con una lectura (que sí se puede repetir
+        sin riesgo) y después mandamos el POST sin reintentos.
+        """
+        self._pedir("GET", "/actuator/health")
+        return self._pedir("POST", ruta, reintentar=False)
+
+    def _pedir(self, metodo: str, ruta: str, reintentar: bool = True, **kwargs: Any) -> Any:
+        intentos = self._intentos if reintentar else 1
+        for intento in range(1, intentos + 1):
             try:
                 respuesta = self._http.request(metodo, ruta, **kwargs)
             except (httpx.TimeoutException, httpx.ConnectError) as error:
@@ -68,15 +94,20 @@ class ClienteApiPolizas:
                     return self._procesar(respuesta)
                 motivo = f"respondió HTTP {respuesta.status_code}"
 
-            if intento < self._intentos:
-                espera = 2**intento  # 2, 4, 8 segundos: cada vez esperamos más
+            if intento < intentos:
+                espera = 2**intento  # 2, 4, 8, 16 segundos: cada vez esperamos más
                 log.warning(
                     "La API de pólizas %s (intento %d de %d). Puede estar despertando; "
                     "reintento en %d s.",
-                    motivo, intento, self._intentos, espera,
+                    motivo, intento, intentos, espera,
                 )
                 self._esperar(espera)
 
+        if not reintentar:
+            raise ApiNoDisponible(
+                "La API no respondió a tiempo, así que no sé si el cambio se aplicó. "
+                "Consulta la póliza antes de volver a intentarlo."
+            )
         raise ApiNoDisponible(
             f"La API de pólizas no respondió después de {self._intentos} intentos. "
             "Está en el plan gratuito de Render y puede tardar en despertar: "

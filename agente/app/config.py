@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     # Modelo de lenguaje
     llm_provider: str = "gemini"
     llm_model: str = "gemini-3.5-flash"
+    # Si el modelo principal está saturado (error 5xx), se intenta una vez con este.
+    llm_model_respaldo: str | None = "gemini-3.5-flash-lite"
     gemini_api_key: SecretStr | None = None
 
 

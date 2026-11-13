@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Any
 
+from app.rag.buscador import BuscadorCondiciones
 from app.tools.cliente_api import ClienteApiPolizas
 
 TIPOS_POLIZA = ["INDIVIDUAL", "COLECTIVA"]
@@ -28,6 +29,8 @@ class Herramienta:
     funcion: Callable[..., Any]
     preparar: Callable[..., str] | None = None
     describir_resultado: Callable[[Any], str] | None = None
+    # Resumen corto del resultado para la trazabilidad (ej. "3 fragmentos, páginas 1 y 2").
+    resumir: Callable[[Any], str] | None = None
 
     @property
     def requiere_confirmacion(self) -> bool:
@@ -44,7 +47,14 @@ def fecha(iso: str) -> str:
     return date.fromisoformat(iso).strftime("%d/%m/%Y")
 
 
-def crear_herramientas(cliente: ClienteApiPolizas) -> dict[str, Herramienta]:
+def resumir_fragmentos(fragmentos: list[dict]) -> str:
+    if not fragmentos:
+        return "Ningún fragmento relevante"
+    paginas = sorted({f["pagina"] for f in fragmentos})
+    return f"{len(fragmentos)} fragmento(s), página(s) {', '.join(map(str, paginas))}"
+
+
+def crear_herramientas(cliente: ClienteApiPolizas, buscador: BuscadorCondiciones) -> dict[str, Herramienta]:
     # Esquema reutilizable: un solo parámetro "id" entero.
     parametro_id = {
         "type": "object",
@@ -131,6 +141,28 @@ def crear_herramientas(cliente: ClienteApiPolizas) -> dict[str, Herramienta]:
             funcion=cliente.cancelar_poliza,
             preparar=preparar("Cancelar"),
             describir_resultado=resultado_poliza,
+        ),
+        Herramienta(
+            nombre="buscar_condiciones",
+            descripcion=(
+                "Busca en el documento de condiciones generales del seguro de arrendamiento: "
+                "coberturas, exclusiones, vigencia, renovación, cancelación, pago de la prima, "
+                "aviso de siniestros, indemnización, deducible, datos personales y quejas. "
+                "Úsala para preguntas sobre qué cubre el seguro, sus reglas o sus plazos. "
+                "Devuelve los fragmentos más parecidos a la pregunta, con su cláusula y página."
+            ),
+            parametros={
+                "type": "object",
+                "properties": {
+                    "pregunta": {
+                        "type": "string",
+                        "description": "La duda a buscar, en español, por ejemplo: ¿cubre terremotos?",
+                    }
+                },
+                "required": ["pregunta"],
+            },
+            funcion=buscador.buscar,
+            resumir=resumir_fragmentos,
         ),
     ]
     # Un diccionario nombre -> herramienta: así el agente la encuentra

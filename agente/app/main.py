@@ -17,6 +17,7 @@ from pydantic import BaseModel, Field
 from app.agent.agente import AccionPendiente, Agente, RespuestaAgente, UsoHerramienta
 from app.agent.llm import ErrorLLM, Mensaje, crear_proveedor
 from app.config import get_settings
+from app.rag.buscador import crear_buscador
 from app.tools.cliente_api import ClienteApiPolizas
 from app.tools.herramientas import crear_herramientas
 
@@ -65,7 +66,8 @@ class RespuestaChat(BaseModel):
 @lru_cache  # se crea un solo agente y se reutiliza en todas las peticiones
 def obtener_agente() -> Agente:
     settings = get_settings()
-    return Agente(crear_proveedor(settings), crear_herramientas(ClienteApiPolizas(settings)))
+    buscador = crear_buscador(settings.condiciones_pdf, settings.embeddings_modelo, settings.embeddings_cache)
+    return Agente(crear_proveedor(settings), crear_herramientas(ClienteApiPolizas(settings), buscador))
 
 
 @app.post("/chat", response_model=RespuestaChat)

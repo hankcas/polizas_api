@@ -23,9 +23,15 @@ class Settings(BaseSettings):
     # Modelo de lenguaje
     llm_provider: str = "gemini"
     llm_model: str = "gemini-3.5-flash"
-    # Si el modelo principal está saturado (error 5xx), se intenta una vez con este.
-    llm_model_respaldo: str | None = "gemini-3.5-flash-lite"
+    # Modelos de respaldo separados por coma. Si el principal agota su cuota
+    # (429) o está saturado (5xx), se prueban en orden. Vacío = sin respaldo.
+    llm_modelos_respaldo: str = "gemini-3.5-flash-lite,gemini-3.1-flash-lite"
     gemini_api_key: SecretStr | None = None
+
+    # RAG sobre el PDF de condiciones generales (rutas relativas a la carpeta agente/)
+    condiciones_pdf: str = "data/condiciones_generales.pdf"
+    embeddings_modelo: str = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+    embeddings_cache: str = ".cache/fastembed"  # donde se guarda el modelo descargado
 
 
 @lru_cache  # lee el .env una sola vez y reutiliza el resultado

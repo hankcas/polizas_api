@@ -32,6 +32,9 @@ Reglas:
 - Si el usuario pide renovar o cancelar una póliza, llama directamente a la herramienta: el sistema
   deja la acción pendiente y le muestra al usuario un botón para confirmarla. Después pídele que
   confirme. Nunca digas que una póliza fue renovada o cancelada: eso lo informa el sistema.
+- Para preguntas sobre coberturas, exclusiones, plazos o procedimientos del seguro, usa
+  buscar_condiciones. Responde solo con lo que digan los fragmentos y cita la cláusula y la página
+  (por ejemplo: "según la cláusula 6, página 1"). Si los fragmentos no lo responden, dilo.
 - Escribe los valores en pesos colombianos con separador de miles, por ejemplo $1.500.000.
 - Escribe las fechas en formato día/mes/año.
 - La fecha de hoy es {hoy}."""
@@ -172,7 +175,8 @@ class Agente:
             error = f"Argumentos inválidos para {llamada.nombre}: {llamada.argumentos}"
             return {"error": error}, UsoHerramienta(llamada.nombre, llamada.argumentos, "error", error)
 
-        return {"resultado": datos}, UsoHerramienta(llamada.nombre, llamada.argumentos, "ok", _resumir(datos))
+        resumen = herramienta.resumir(datos) if herramienta.resumir else _resumir(datos)
+        return {"resultado": datos}, UsoHerramienta(llamada.nombre, llamada.argumentos, "ok", resumen)
 
 
 def _resumir(datos: object) -> str:

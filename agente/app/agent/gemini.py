@@ -13,15 +13,25 @@ log = logging.getLogger(__name__)
 
 class ProveedorGemini:
     def __init__(
-        self, api_key: str, modelo: str, respaldo: str | None = None, cliente: genai.Client | None = None
+        self,
+        api_key: str,
+        modelo: str,
+        respaldos: list[str] | None = None,
+        cliente: genai.Client | None = None,
     ):
-        # Lista de modelos a intentar en orden: el principal y, si hay, el de respaldo.
-        self._modelos = [modelo, respaldo] if respaldo else [modelo]
+        # Modelos a intentar en orden. En el plan gratuito cada modelo tiene su
+        # propia cuota (20 peticiones al día, 5 por minuto): si uno se agota o
+        # está saturado, el siguiente todavía puede responder.
+        self._modelos = [modelo, *(respaldos or [])]
         self._cliente = cliente or genai.Client(
             api_key=api_key,
-            # El SDK reintenta solo si Gemini responde 429 (límite) o 5xx (saturado).
+            # El SDK reintenta una vez si Gemini está saturado (5xx). Los 429 de
+            # cuota no se reintentan: si la cuota del día se acabó, esperar unos
+            # segundos no sirve; mejor pasar al siguiente modelo.
             http_options=types.HttpOptions(
-                retry_options=types.HttpRetryOptions(attempts=3, initial_delay=2, max_delay=10)
+                retry_options=types.HttpRetryOptions(
+                    attempts=2, initial_delay=2, max_delay=5, http_status_codes=[500, 502, 503, 504]
+                )
             ),
         )
 
@@ -40,11 +50,11 @@ class ProveedorGemini:
             try:
                 respuesta = self._cliente.models.generate_content(model=modelo, contents=contenidos, config=config)
                 break  # funcionó: salimos del for
-            except errors.ServerError as error:  # 5xx: el modelo está saturado
+            except errors.APIError as error:
+                if not _vale_la_pena_otro_modelo(error):  # ej. clave inválida: otro modelo fallaría igual
+                    raise ErrorLLM(_mensaje_de_error(error)) from error
                 ultimo_error = error
-                log.warning("El modelo %s está saturado (%s); probando el siguiente.", modelo, error.code)
-            except errors.APIError as error:  # otros errores (clave, cuota...): cambiar de modelo no ayuda
-                raise ErrorLLM(_mensaje_de_error(error)) from error
+                log.warning("El modelo %s no está disponible (%s); probando el siguiente.", modelo, error.code)
         else:
             # El `else` de un `for` corre solo si el for terminó sin `break`:
             # es decir, todos los modelos fallaron.
@@ -106,10 +116,16 @@ def _a_contenidos(historial: list[Mensaje]) -> list[types.Content]:
     return contenidos
 
 
+def _vale_la_pena_otro_modelo(error: errors.APIError) -> bool:
+    """429 = cuota de ese modelo agotada; 5xx = saturado. Otro modelo sí puede responder."""
+    return error.code == 429 or (error.code is not None and error.code >= 500)
+
+
 def _mensaje_de_error(error: errors.APIError) -> str:
     if error.code == 429:
-        return ("Se agotó por ahora la cuota gratuita de Gemini (límite por minuto o por día). "
-                "Espera un momento y vuelve a intentar.")
+        return ("Se agotó la cuota gratuita de Gemini en todos los modelos configurados "
+                "(cada modelo permite unas 20 consultas al día y 5 por minuto). "
+                "Espera un minuto; si sigue igual, la cuota se renueva al día siguiente.")
     if error.code in (401, 403) or (error.code == 400 and "API key" in str(error.message)):
         return "Gemini rechazó la clave. Revisa GEMINI_API_KEY en el archivo .env."
     if error.code and error.code >= 500:

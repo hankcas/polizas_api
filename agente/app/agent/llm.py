@@ -70,7 +70,7 @@ def crear_proveedor(settings: Settings) -> ProveedorLLM:
 
         if settings.gemini_api_key is None:
             raise ValueError("Falta GEMINI_API_KEY en el archivo .env.")
-        return ProveedorGemini(
-            settings.gemini_api_key.get_secret_value(), settings.llm_model, settings.llm_model_respaldo or None
-        )
+        # "a, b" -> ["a", "b"]
+        respaldos = [m.strip() for m in settings.llm_modelos_respaldo.split(",") if m.strip()]
+        return ProveedorGemini(settings.gemini_api_key.get_secret_value(), settings.llm_model, respaldos)
     raise ValueError(f"Proveedor de LLM no soportado: {settings.llm_provider!r}")

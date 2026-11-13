@@ -1,0 +1,25 @@
+# Secretos: el archivo .env real NUNCA se sube (solo .env.example)
+.env
+
+# Entorno virtual de Python
+.venv/
+venv/
+
+# Archivos que Python genera solo
+__pycache__/
+*.pyc
+
+# Pruebas y cobertura
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Modelos de embeddings descargados (se bajan solos la primera vez)
+.cache/
+models_cache/
+
+# Editores y sistema operativo
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store

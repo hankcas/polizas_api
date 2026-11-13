@@ -67,7 +67,10 @@ Valores válidos (del Swagger): `tipo` = `INDIVIDUAL` o `COLECTIVA`; `estado` = 
 
 | Situación | Qué hace el agente |
 |---|---|
-| Render dormido (tarda 30-60 s) | Reintenta varias veces con espera creciente y avisa "la API está despertando" |
+| Render dormido (medido: hasta 145 s en despertar) | Hasta 5 intentos de 30 s con espera creciente (2, 4, 8, 16 s) y avisa "la API está despertando" |
+| Gemini saturado (`5xx`) | El SDK reintenta una vez; si sigue saturado, pasa al siguiente modelo de `LLM_MODELOS_RESPALDO` |
+| Cuota gratuita agotada (`429`: medido, 20 consultas al día y 5 por minuto **por modelo**) | No reintenta (esperar no sirve si se acabó la del día): pasa directo al siguiente modelo, que tiene su propia cuota. Si todos están agotados, mensaje claro al usuario |
+| Timeout en un POST (renovar/cancelar) | **No reintenta**: el primer intento pudo haber llegado y se renovaría dos veces. Antes del POST despierta la API con `GET /actuator/health`, que sí se puede repetir sin riesgo |
 | Timeout después de todos los intentos | Le explica al usuario que la API no respondió, sin inventar datos |
 | `401` | Mensaje claro: la API key del `.env` es incorrecta. No reintenta |
 | `404` / `422` | Le pasa el mensaje de la API al LLM para que lo explique (ej. "no se puede renovar una póliza cancelada") |
@@ -115,3 +118,6 @@ Todos los comandos del agente (instalar, correr, probar) se ejecutan dentro de l
 | `fastembed` + `numpy` para el RAG | `sentence-transformers` (PyTorch, ~2 GB) o embeddings de Gemini | Corre local y gratis, imagen Docker liviana, y la búsqueda (similitud coseno) cabe en pocas líneas |
 | `httpx` para llamar a la API | `requests` | Tiene timeouts claros y se simula fácil en pruebas con `respx` |
 | `pydantic-settings` para la configuración | Leer `os.environ` a mano | Valida tipos y avisa al arrancar si falta una variable obligatoria |
+| RAG: fragmentos de 250 caracteres, pero se entrega la cláusula completa ("de pequeño a grande") | Fragmentos grandes (700) | Medido con 6 preguntas de prueba: con 700, "¿cubre terremotos?" no encontraba EXCLUSIONES; con 250 aciertan 6 de 6. Pero entregar solo el pedazo dejaba listas incompletas (3 de 9 exclusiones), por eso se entrega la cláusula entera |
+| PDF partido por cláusulas (títulos numerados) | Cortes fijos cada N caracteres | Cada cláusula trata un solo tema y permite citar "cláusula 6, página 1" |
+| Varios modelos de respaldo | Un solo modelo | El plan gratuito permite ~10 preguntas al día por modelo; con 3 modelos alcanza para una demo |

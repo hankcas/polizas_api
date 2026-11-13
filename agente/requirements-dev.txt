@@ -2,3 +2,5 @@
 -r requirements.txt
 pytest==9.2.0
 respx==0.23.1
+# Solo para generar el PDF de ejemplo (scripts/generar_pdf.py)
+fpdf2==2.9.0

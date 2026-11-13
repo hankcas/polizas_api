@@ -1,8 +1,12 @@
 # Dependencias para ejecutar el agente, con versión fija (==) para que
 # cualquier máquina instale exactamente lo mismo.
-# Se irán agregando por etapa (RAG e interfaz llegan más adelante).
 fastapi==0.162.7
 uvicorn[standard]==0.54.0
 httpx==0.28.1
 pydantic-settings==2.16.3
 google-genai==3.3.0
+
+# RAG: leer el PDF, calcular embeddings en local y comparar vectores
+pypdf==7.1.0
+fastembed==0.9.1
+numpy==2.5.4

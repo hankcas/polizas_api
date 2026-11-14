@@ -34,6 +34,20 @@ El agente permite preguntarlo en lenguaje natural:
 - ¿Cuánto tiempo tengo para avisar si el inquilino no me paga?
 - Renueva la póliza 4 *(queda pendiente hasta que confirmes)*
 
+## Capturas
+
+**Consulta de datos reales de la API** (herramienta `listar_polizas`):
+
+![Consulta de pólizas colectivas activas](docs/capturas/consulta-polizas.png)
+
+**Pregunta sobre las condiciones generales**, respondida desde el PDF con la cláusula y la página (RAG):
+
+![Respuesta sobre terremotos citando la cláusula 6](docs/capturas/condiciones-rag.png)
+
+**Renovación con confirmación**: el agente deja la acción pendiente, el usuario confirma con el botón, y el mensaje final se arma con la respuesta real de la API:
+
+![Renovación de la póliza 4 con confirmación](docs/capturas/confirmacion.png)
+
 ## Arquitectura
 
 ```mermaid

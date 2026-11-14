@@ -2,6 +2,8 @@
 
 API REST desarrollada con Spring Boot para gestionar pólizas de seguro y sus riesgos, con reglas de negocio, seguridad por API key e integración simulada con un CORE transaccional.
 
+> **Nuevo: [agente de IA](agente/README.md)** en Python que responde preguntas en español sobre estas pólizas usando la API (function calling con Gemini), consulta las condiciones generales con RAG y pide confirmación antes de renovar o cancelar.
+
 ## Demo en vivo
 
 **Swagger UI:** https://polizas-api-g8ew.onrender.com/swagger-ui.html

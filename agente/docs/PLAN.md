@@ -90,10 +90,11 @@ polizas_api/
     │   ├── agent/              Bucle del agente y adaptador del LLM (Gemini)
     │   ├── tools/              Cliente HTTP de la API y herramientas
     │   └── rag/                Lectura del PDF, embeddings y búsqueda
-    ├── ui/streamlit_app.py     Interfaz de chat
+    ├── ui/app.py               Interfaz de chat (Streamlit)
     ├── data/                   PDF de condiciones generales
     ├── tests/                  Pruebas con pytest (LLM y API simulados)
     ├── Dockerfile
+    ├── docker-compose.yml      Agente + interfaz con un solo comando
     ├── .env.example
     └── README.md
 ```

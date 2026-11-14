@@ -1,0 +1,26 @@
+# Levanta el agente y la interfaz con un solo comando, desde la carpeta agente/:
+#   docker compose up --build
+# Agente: http://localhost:8000/docs   Interfaz: http://localhost:8501
+services:
+  agente:
+    build: .
+    image: agente-polizas
+    env_file: .env  # las claves se leen de tu .env; nunca quedan dentro de la imagen
+    ports:
+      # Puerto de tu PC : puerto del contenedor. Si el 8000 está ocupado:
+      #   PUERTO_AGENTE=8010 docker compose up
+      - "${PUERTO_AGENTE:-8000}:8000"
+
+  interfaz:
+    image: agente-polizas  # la misma imagen, con otro comando
+    command: >
+      streamlit run ui/app.py
+      --server.address 0.0.0.0 --server.port 8501 --server.headless true
+      --browser.gatherUsageStats false
+    environment:
+      # Dentro de Docker los servicios se encuentran por su nombre, no por localhost.
+      AGENTE_URL: http://agente:8000
+    ports:
+      - "${PUERTO_INTERFAZ:-8501}:8501"
+    depends_on:
+      - agente
